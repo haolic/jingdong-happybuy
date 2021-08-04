@@ -193,33 +193,54 @@ async function goodPrice(stockId) {
 
 // 商品状态
 async function goodStatus(goodId, areaId) {
-  const callback = {};
-  let name;
-  let status;
+  // const callback = {};
+  // let name;
+  // let status;
 
-  callback[(name = 'jQuery' + getRandomInt(100000, 999999))] = (data) => {
-    status = data[goodId];
-  };
+  // callback[(name = 'jQuery' + getRandomInt(100000, 999999))] = (data) => {
+  //   status = data[goodId];
+  // };
 
-  const result = await request({
+  // const result = await request({
+  //   method: 'get',
+  //   url: 'http://c0.3.cn/stocks',
+  //   headers: Object.assign(defaultInfo.header, {
+  //     cookie: defaultInfo.cookieData.join(''),
+  //   }),
+  //   params: {
+  //     type: 'getstocks',
+  //     area: areaId,
+  //     skuIds: goodId,
+  //     callback: name,
+  //   },
+  //   responseType: 'arraybuffer',
+  // });
+
+  // const data = iconv.decode(result.data, 'gb2312');
+  // eval('callback.' + data);
+  const res = await request({
     method: 'get',
     url: 'http://c0.3.cn/stocks',
-    headers: Object.assign(defaultInfo.header, {
-      cookie: defaultInfo.cookieData.join(''),
-    }),
+    headers: {
+      Accept:
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      'Accept-Encoding': 'gzip, deflate',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      Host: 'c0.3.cn',
+      Pragma: 'no-cache',
+      'Upgrade-Insecure-Requests': 1,
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+    },
     params: {
       type: 'getstocks',
       area: areaId,
       skuIds: goodId,
-      callback: name,
     },
-    responseType: 'arraybuffer',
   });
-
-  const data = iconv.decode(result.data, 'gb2312');
-  eval('callback.' + data);
-
-  return status;
+  return res.data[goodId];
 }
 
 // 无货商品状态轮训
@@ -235,22 +256,22 @@ async function runGoodSearch() {
       ]);
 
       const body = $.load(iconv.decode(all[2].data, 'utf8'));
+      const statusCode = +all[1]['StockState'];
 
       goodData.name = body('div.sku-name').text().trim();
       const cartLink = body('a#InitCartUrl').attr('href');
       goodData.cartLink = cartLink ? 'http:' + cartLink : '无购买链接';
       goodData.price = all[0][0].p;
-      goodData.stockStatus = all[1]['StockStateName'];
+      goodData.stockStatus = statusCode === 33 ? '有货' : '无货' + statusCode;
       goodData.time = formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss');
 
-      console.log();
-      console.log(`   商品详情------------------------------`);
-      console.log(`   时间：${goodData.time}`);
-      console.log(`   商品名：${goodData.name}`);
-      console.log(`   价格：${goodData.price}`);
-      console.log(`   状态：${goodData.stockStatus}`);
-      console.log(`   商品连接：${goodData.link}`);
-      console.log(`   购买连接：${goodData.cartLink}`);
+      console.log(`商品详情------------------------------
+${goodData.time}
+${goodData.name}
+价格：${goodData.price}
+状态：${goodData.stockStatus}
+链接：${goodData.link}
+加购物车：${goodData.cartLink}`);
       const fileName = `records/${dayjs().format('YYYY-MM-DD HH')}.txt`;
       fs.appendFile(
         fileName,
@@ -269,7 +290,6 @@ ${goodData.name}
         }
       );
 
-      const statusCode = all[1]['StockState'];
       // 如果有货就下单
       // 33 有货  34 无货
       if (+statusCode === 33) {
