@@ -245,10 +245,10 @@ async function goodStatus(goodId, areaId) {
 
 // 无货商品状态轮训
 async function runGoodSearch() {
-  try {
-    let flag = true;
+  let flag = true;
 
-    while (flag) {
+  while (flag) {
+    try {
       const all = await Promise.all([
         goodPrice(defaultInfo.goodId),
         goodStatus(defaultInfo.goodId, defaultInfo.areaId),
@@ -284,12 +284,15 @@ ${goodData.name}
 加购物车：${goodData.cartLink}
  `,
         (err) => {
-          if (err) throw err;
+          if (err) {
+            console.log(err);
+            fs.appendFile(fileName, err);
+          }
           console.log('\n');
-          console.log(`已保存日志，${fileName}`);
+          console.log(`已保存日志，${fileName}\n`);
+          console.log(`状态：${goodData.stockStatus}`);
         }
       );
-
       // 如果有货就下单
       // 33 有货  34 无货
       if (+statusCode === 33) {
@@ -297,9 +300,11 @@ ${goodData.name}
       } else {
         await sleep(defaultInfo.time);
       }
+    } catch (error) {
+      console.log(error);
+      fs.appendFile('records/errorlog.txt', err);
+      return Promise.reject(error);
     }
-  } catch (error) {
-    return Promise.reject(error);
   }
 }
 
@@ -493,7 +498,7 @@ puppeteer
     return login(ticket);
   })
   .then(() => {
-    log('登录成功');
+    log('查询中...\n');
     return runGoodSearch();
   })
   .then(() => addCart())
