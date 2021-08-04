@@ -341,31 +341,6 @@ async function buy() {
 
   console.log('   开始下单');
 
-  const formData = new FormData();
-  const params = {
-    overseaPurchaseCookies: '',
-    vendorRemarks: '[]',
-    'submitOrderParam.sopNotPutInvoice': false,
-    'submitOrderParam.trackID': 'TestTrackId',
-    presaleStockSign: 1,
-    'submitOrderParam.ignorePriceChange': 0,
-    'submitOrderParam.btSupport': 0,
-    'submitOrderParam.eid': defaultInfo.eid,
-    'submitOrderParam.fp': defaultInfo.fp,
-    'submitOrderParam.isBestCoupon': 0,
-    'submitOrderParam.jxj': 1,
-  };
-  Object.keys(params).forEach((key) => {
-    formData.append(key, params[key]);
-  });
-  // const result = await request.post(
-  //   'https://trade.jd.com/shopping/order/submitOrder.action?&presaleStockSign=1',
-  //   formData,
-  //   Object.assign(defaultInfo.header, {
-  //     'Content-Type': 'application/x-www-form-urlencoded',
-  //   })
-  // );
-
   const result = await request({
     method: 'post',
     url: 'https://trade.jd.com/shopping/order/submitOrder.action',
@@ -393,10 +368,24 @@ async function buy() {
   console.log(result.data);
   console.log('\n');
   console.log(result.data.message);
-
+  const fileName = dayjs().format('YYYY-MM-DD HH:mm:ss') + '.txt';
   if (result.data.success) {
     console.log(`   下单成功,订单号${result.data.orderId}`);
     console.log('请前往京东商城及时付款，以免订单超时取消');
+    fs.appendFile(
+      `records/${fileName}`,
+      `\n
+      订单详情------------------------------\n
+      订单总金额：${payment}\n
+      下单成功,订单号${result.data.orderId}\n
+      请前往京东商城或手机京东及时付款，以免订单超时取消\n
+      https://order.jd.com/center/list.action`,
+      (err) => {
+        if (err) throw err;
+        console.log('\n');
+        console.log(`已保存下单日志，${fileName}`);
+      }
+    );
   } else {
     console.log(`   下单失败,${result.data.message}`);
   }
