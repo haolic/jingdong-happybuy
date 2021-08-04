@@ -240,7 +240,11 @@ async function goodStatus(goodId, areaId) {
       skuIds: goodId,
     },
   });
-  return res.data[goodId];
+  const d = res.data[goodId];
+  if (d.err) {
+    d.StockState = 34;
+  }
+  return d;
 }
 
 // 无货商品状态轮训
@@ -257,6 +261,7 @@ async function runGoodSearch() {
 
       const body = $.load(iconv.decode(all[2].data, 'utf8'));
       const statusCode = +all[1]['StockState'];
+      const isError = all[1]['err'];
 
       goodData.name = body('div.sku-name').text().trim();
       const cartLink = body('a#InitCartUrl').attr('href');
@@ -265,34 +270,25 @@ async function runGoodSearch() {
       goodData.stockStatus = statusCode === 33 ? '有货' : '无货' + statusCode;
       goodData.time = formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss');
 
-      console.log(`商品详情------------------------------
+      const str = `
 ${goodData.time}
 ${goodData.name}
 价格：${goodData.price}
-状态：${goodData.stockStatus}
-链接：${goodData.link}
-加购物车：${goodData.cartLink}`);
-      const fileName = `records/${dayjs().format('YYYY-MM-DD HH')}.txt`;
-      fs.appendFile(
-        fileName,
-        `
-${goodData.time}
-${goodData.name}
-价格：${goodData.price}
-状态：${goodData.stockStatus}
+状态：${goodData.stockStatus} err:${isError}
 链接：${goodData.link}
 加购物车：${goodData.cartLink}
- `,
-        (err) => {
-          if (err) {
-            console.log(err);
-            fs.appendFile(fileName, err);
-          }
-          console.log('\n');
-          console.log(`已保存日志，${fileName}\n`);
-          console.log(`状态：${goodData.stockStatus}`);
+       `;
+      console.log(str);
+      const fileName = `records/${dayjs().format('YYYY-MM-DD HH')}.txt`;
+      fs.appendFile(fileName, str, (err) => {
+        if (err) {
+          console.log(err);
+          fs.appendFile(fileName, err);
         }
-      );
+        console.log('\n');
+        console.log(`已保存日志，${fileName}\n`);
+        console.log(`状态：${goodData.stockStatus}`);
+      });
       // 如果有货就下单
       // 33 有货  34 无货
       if (+statusCode === 33) {
