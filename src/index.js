@@ -218,33 +218,41 @@ async function goodStatus(goodId, areaId) {
 
   // const data = iconv.decode(result.data, 'gb2312');
   // eval('callback.' + data);
-  const res = await request({
-    method: 'get',
-    url: 'http://c0.3.cn/stocks',
-    headers: {
-      Accept:
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-      'Accept-Encoding': 'gzip, deflate',
-      'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      Host: 'c0.3.cn',
-      Pragma: 'no-cache',
-      'Upgrade-Insecure-Requests': 1,
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
-    },
-    params: {
-      type: 'getstocks',
-      area: areaId,
-      skuIds: goodId,
-    },
-  });
-  const d = res.data[goodId];
-  if (d.err) {
-    d.StockState = 34;
+  try {
+    const res = await request({
+      method: 'get',
+      url: 'http://c0.3.cn/stocks',
+      headers: {
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        Host: 'c0.3.cn',
+        Pragma: 'no-cache',
+        'Upgrade-Insecure-Requests': 1,
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+      },
+      params: {
+        type: 'getstocks',
+        area: areaId,
+        skuIds: goodId,
+      },
+    });
+    const d = res.data[goodId];
+    if (d.err) {
+      d.StockState = 34;
+    }
+    return d;
+  } catch(e) {
+    console.log(e);
+    return {
+      StockState: 34,
+      err: true
+    }
   }
-  return d;
 }
 
 // 无货商品状态轮训
