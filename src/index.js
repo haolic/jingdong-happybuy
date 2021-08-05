@@ -274,7 +274,7 @@ async function runGoodSearch() {
 ${goodData.time}
 ${goodData.name}
 价格：${goodData.price}
-状态：${goodData.stockStatus} err:${isError}
+状态：${goodData.stockStatus} ${isError ? `err:${isError}` : ''}
 链接：${goodData.link}
 加购物车：${goodData.cartLink}
        `;
