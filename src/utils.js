@@ -11,7 +11,7 @@ function sleep(defaultInfo, fastBuyTime) {
       } else {
         setTimeout(() => {
           loop();
-        }, 100);
+        }, 60);
       }
     };
     // 如果是预约定时抢购商品，sleep时100ms的间隔轮询判断是否到时间了，到了之后直接resolve();

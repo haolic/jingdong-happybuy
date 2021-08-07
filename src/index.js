@@ -222,7 +222,7 @@ ${infoStr}
         canBuyGoodLink = canBuyGood.cartLink;
         return canBuyGoodLink;
       } else {
-        await sleep(defaultInfo);
+        await sleep(defaultInfo, buyTime);
       }
     } catch (error) {
       console.log(error);
@@ -329,6 +329,7 @@ async function buy() {
         console.log(`已保存下单日志，${fileName}`);
       }
     );
+    log('', true);
   } else {
     console.log(`下单失败,${result.data.message}`);
   }
