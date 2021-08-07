@@ -311,15 +311,9 @@ async function buy() {
       'submitOrderParam.jxj': '1',
     },
   });
-
-  console.log(result);
-  console.log('\n');
-  console.log(result.data);
-  console.log('\n');
-  console.log(result.data.message);
   const fileName = dayjs().format('YYYY-MM-DD HH:mm:ss') + '.txt';
   if (result.data.success) {
-    console.log(`   下单成功,订单号${result.data.orderId}`);
+    console.log(`下单成功,订单号${result.data.orderId}`);
     console.log('请前往京东商城及时付款，以免订单超时取消');
     fs.appendFile(
       `records/${fileName}`,
@@ -336,7 +330,7 @@ async function buy() {
       }
     );
   } else {
-    console.log(`   下单失败,${result.data.message}`);
+    console.log(`下单失败,${result.data.message}`);
   }
 }
 
