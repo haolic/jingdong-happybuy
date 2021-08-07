@@ -40,7 +40,7 @@ function cookieParser(cookies) {
 }
 
 function splitGoodId(goodId) {
-  return goodId.split(/\s*,\s*/);
+  return `${goodId}`.split(/\s*,\s*/);
 }
 
 module.exports = {

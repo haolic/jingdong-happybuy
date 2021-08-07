@@ -44,7 +44,6 @@ const goodStatus = async (goodId, areaId) => {
   const goodIdArr = splitGoodId(goodId);
   try {
     const statusMap = await requestGoodStatus(goodId, areaId);
-    console.log(statusMap, goodIdArr);
     const goodStateMap = goodIdArr.map((el) => {
       const { StockState, err } = statusMap[el];
       return {
