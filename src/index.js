@@ -180,7 +180,7 @@ async function runGoodSearch() {
         return `${name}
 价格：${price} 状态： ${StockState} ${StockStateName} 是否错误：${err ? err : '否'}
 页面链接：${pageLink}
-加购物车链接：${cartLink}
+加购物车链接：${cartLink || '暂无链接'}
 `;
       }).join(`
 `);
@@ -199,7 +199,7 @@ ${infoStr}
         console.log(`已保存日志${fileName}`);
       });
       const canBuyGood = allInfoArr.find((el) => {
-        return el.StockState === 33;
+        return el.StockState === 33 && el.cartLink;
       });
       if (canBuyGood) {
         flag = false;

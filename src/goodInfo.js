@@ -24,7 +24,7 @@ const goodInfo = async (goodId, defaultInfo) => {
       return {
         name,
         pageLink: pageLink,
-        cartLink: cartLink ? `http:${cartLink}` : '暂无',
+        cartLink: cartLink ? `http:${cartLink}` : '',
       };
     })
   );
