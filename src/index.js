@@ -1,18 +1,16 @@
 const args = require('./args');
 const log = require('./log');
-const FormData = require('form-data');
 const { sleep, writeAndOpenFile, getRandomInt, cookieParser } = require('./utils');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const $ = require('cheerio');
 const request = require('axios');
-const iconv = require('iconv-lite');
 const dayjs = require('dayjs');
 const goodPrice = require('./goodPrice');
 const goodStatus = require('./goodStatus');
 const goodInfo = require('./goodInfo');
 
-const { area: areaId, good: goodId, time, buy: isBuy } = args();
+const { area: areaId, good: goodId, time, buy: isBuy, buyTime } = args();
 
 // Initial request params
 const defaultInfo = {
@@ -111,7 +109,7 @@ async function listenScan() {
       });
 
       eval('callback.' + result.data);
-      await sleep(1000);
+      await sleep({ time: 1000 });
     }
 
     return ticket;
@@ -162,7 +160,25 @@ async function runGoodSearch() {
         const { price } = priceArr[idx];
         const { StockStateName, goodId, StockState, err } = statusArr[idx];
         const { name, pageLink, cartLink } = el;
-
+        // 商品是要预约定时抢购的商品
+        if (buyTime) {
+          if (dayjs().isAfter(dayjs(buyTime, 'YYYYMMDDHH:mm:ss'))) {
+            // 目前时间比设定时间大
+            return {
+              name,
+              price,
+              goodId,
+              pageLink,
+              cartLink:
+                StockState === 33
+                  ? `https://cart.jd.com/gate.action?pcount=1&ptype=1&pid=${goodId}`
+                  : '无链接',
+              StockState,
+              StockStateName,
+              err,
+            };
+          }
+        }
         return {
           name,
           price,
@@ -206,7 +222,7 @@ ${infoStr}
         canBuyGoodLink = canBuyGood.cartLink;
         return canBuyGoodLink;
       } else {
-        await sleep(defaultInfo.time);
+        await sleep(defaultInfo);
       }
     } catch (error) {
       console.log(error);
@@ -324,37 +340,6 @@ async function buy() {
   }
 }
 
-//格式化日期
-function formatDate(date, fmt) {
-  const o = {
-    'y+': date.getFullYear(),
-    'M+': date.getMonth() + 1, //月份
-    'd+': date.getDate(), //日
-    'h+': date.getHours(), //小时
-    'm+': date.getMinutes(), //分
-    's+': date.getSeconds(), //秒
-    'q+': Math.floor((date.getMonth() + 3) / 3), //季度
-    'S+': date.getMilliseconds(), //毫秒
-  };
-  for (let k in o) {
-    if (new RegExp('(' + k + ')').test(fmt)) {
-      if (k == 'y+') {
-        fmt = fmt.replace(RegExp.$1, ('' + o[k]).substr(4 - RegExp.$1.length));
-      } else if (k == 'S+') {
-        var lens = RegExp.$1.length;
-        lens = lens == 1 ? 3 : lens;
-        fmt = fmt.replace(RegExp.$1, ('00' + o[k]).substr(('' + o[k]).length - 1, lens));
-      } else {
-        fmt = fmt.replace(
-          RegExp.$1,
-          RegExp.$1.length == 1 ? o[k] : ('00' + o[k]).substr(('' + o[k]).length)
-        );
-      }
-    }
-  }
-  return fmt;
-}
-
 log('初始化浏览器');
 puppeteer
   .launch()
@@ -362,7 +347,7 @@ puppeteer
     log('初始化完成，开始抓取页面');
     const page = await browser.newPage();
     await page.goto('https://passport.jd.com/new/login.aspx');
-    await sleep(1000);
+    await sleep({ time: 1000 });
     log('页面抓取完成，开始分析页面');
     const inputs = await page.evaluate((res) => {
       const result = document.querySelectorAll('input');

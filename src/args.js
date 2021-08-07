@@ -25,6 +25,11 @@ module.exports = function args(params) {
       default: true,
       boolean: true
     })
+    .option("f", {
+      alias: "buyTime",
+      describe: "抢购时间",
+      default: '',
+    })
     .usage("食用方式: yarn start -a 地区编号 -g 商品编号")
     .example("node index.js -a 2_2830_51810_0 -g 5008395")
     .locale("zh_CN").argv;
