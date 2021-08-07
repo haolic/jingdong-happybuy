@@ -39,9 +39,14 @@ function cookieParser(cookies) {
   return result;
 }
 
+function splitGoodId(goodId) {
+  return goodId.split(/\s*,\s*/);
+}
+
 module.exports = {
   sleep,
   writeAndOpenFile,
   getRandomInt,
-  cookieParser
+  cookieParser,
+  splitGoodId
 };

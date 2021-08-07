@@ -1,18 +1,16 @@
 const args = require('./args');
 const log = require('./log');
 const FormData = require('form-data');
-const {
-  sleep,
-  writeAndOpenFile,
-  getRandomInt,
-  cookieParser,
-} = require('./utils');
+const { sleep, writeAndOpenFile, getRandomInt, cookieParser } = require('./utils');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const $ = require('cheerio');
 const request = require('axios');
 const iconv = require('iconv-lite');
 const dayjs = require('dayjs');
+const goodPrice = require('./goodPrice');
+const goodStatus = require('./goodStatus');
+const goodInfo = require('./goodInfo');
 
 const { area: areaId, good: goodId, time, buy: isBuy } = args();
 
@@ -148,144 +146,49 @@ async function login(ticket) {
   }
 }
 
-// 商品信息
-function goodInfo(goodId) {
-  const stockLink = `http://item.jd.com/${goodId}.html`;
-
-  return request({
-    method: 'get',
-    url: stockLink,
-    headers: Object.assign(defaultInfo.header, {
-      cookie: defaultInfo.cookieData.join(''),
-    }),
-    responseType: 'arraybuffer',
-  });
-}
-
-// 商品价格
-async function goodPrice(stockId) {
-  const callback = {};
-  let name;
-  let price;
-
-  callback[(name = 'jQuery' + getRandomInt(100000, 999999))] = (data) => {
-    price = data;
-  };
-
-  const result = await request({
-    method: 'get',
-    url: 'http://p.3.cn/prices/mgets',
-    headers: Object.assign(defaultInfo.header, {
-      cookie: defaultInfo.cookieData.join(''),
-    }),
-    params: {
-      type: 1,
-      pduid: new Date().getTime(),
-      skuIds: 'J_' + stockId,
-      callback: name,
-    },
-  });
-
-  eval('callback.' + result.data);
-
-  return price;
-}
-
-// 商品状态
-async function goodStatus(goodId, areaId) {
-  // const callback = {};
-  // let name;
-  // let status;
-
-  // callback[(name = 'jQuery' + getRandomInt(100000, 999999))] = (data) => {
-  //   status = data[goodId];
-  // };
-
-  // const result = await request({
-  //   method: 'get',
-  //   url: 'http://c0.3.cn/stocks',
-  //   headers: Object.assign(defaultInfo.header, {
-  //     cookie: defaultInfo.cookieData.join(''),
-  //   }),
-  //   params: {
-  //     type: 'getstocks',
-  //     area: areaId,
-  //     skuIds: goodId,
-  //     callback: name,
-  //   },
-  //   responseType: 'arraybuffer',
-  // });
-
-  // const data = iconv.decode(result.data, 'gb2312');
-  // eval('callback.' + data);
-  try {
-    const res = await request({
-      method: 'get',
-      url: 'http://c0.3.cn/stocks',
-      headers: {
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-        Host: 'c0.3.cn',
-        Pragma: 'no-cache',
-        'Upgrade-Insecure-Requests': 1,
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
-      },
-      params: {
-        type: 'getstocks',
-        area: areaId,
-        skuIds: goodId,
-      },
-    });
-    const d = res.data[goodId];
-    if (d.err) {
-      d.StockState = 34;
-    }
-    return d;
-  } catch(e) {
-    console.log(e);
-    return {
-      StockState: 34,
-      err: true
-    }
-  }
-}
-
 // 无货商品状态轮训
 async function runGoodSearch() {
   let flag = true;
+  let canBuyGoodLink = '';
 
   while (flag) {
     try {
-      const all = await Promise.all([
-        goodPrice(defaultInfo.goodId),
+      const [priceArr, statusArr, infoArr] = await Promise.all([
+        goodPrice(defaultInfo.goodId, defaultInfo),
         goodStatus(defaultInfo.goodId, defaultInfo.areaId),
-        goodInfo(defaultInfo.goodId),
+        goodInfo(defaultInfo.goodId, defaultInfo),
       ]);
+      const allInfoArr = infoArr.map((el, idx) => {
+        const { price } = priceArr[idx];
+        const { StockStateName, goodId, StockState, err } = statusArr[idx];
+        const { name, pageLink, cartLink } = el;
 
-      const body = $.load(iconv.decode(all[2].data, 'utf8'));
-      const statusCode = +all[1]['StockState'];
-      const isError = all[1]['err'];
+        return {
+          name,
+          price,
+          goodId,
+          pageLink,
+          cartLink,
+          StockState,
+          StockStateName,
+          err,
+        };
+      });
 
-      goodData.name = body('div.sku-name').text().trim();
-      const cartLink = body('a#InitCartUrl').attr('href');
-      goodData.cartLink = cartLink ? 'http:' + cartLink : '无购买链接';
-      goodData.price = all[0][0].p;
-      goodData.stockStatus = statusCode === 33 ? '有货' : '无货' + statusCode;
-      goodData.time = formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss');
+      const infoStr = allInfoArr.map((el) => {
+        const { name, price, StockState, StockStateName, pageLink, cartLink, err } = el;
+        return `${name}
+价格：${price} 状态： ${StockState} ${StockStateName} 是否错误：${err ? err : '否'}
+页面链接：${pageLink}
+加购物车链接：${cartLink}
+`;
+      }).join(`
+`);
 
-      const str = `
-${goodData.time}
-${goodData.name}
-价格：${goodData.price}
-状态：${goodData.stockStatus} ${isError ? `err:${isError}` : ''}
-链接：${goodData.link}
-加购物车：${goodData.cartLink}
-       `;
+      const str = `--------------------------------
+时间：${dayjs().format('YYYY-MM-DD HH:mm:ss')}
+${infoStr}
+`;
       console.log(str);
       const fileName = `records/${dayjs().format('YYYY-MM-DD HH')}.txt`;
       fs.appendFile(fileName, str, (err) => {
@@ -293,14 +196,15 @@ ${goodData.name}
           console.log(err);
           fs.appendFile(fileName, err);
         }
-        console.log('\n');
-        console.log(`已保存日志，${fileName}\n`);
-        console.log(`状态：${goodData.stockStatus}`);
+        console.log(`已保存日志${fileName}`);
       });
-      // 如果有货就下单
-      // 33 有货  34 无货
-      if (+statusCode === 33) {
+      const canBuyGood = allInfoArr.find((el) => {
+        return el.StockState === 33;
+      });
+      if (canBuyGood) {
         flag = false;
+        canBuyGoodLink = canBuyGood.cartLink;
+        return canBuyGoodLink;
       } else {
         await sleep(defaultInfo.time);
       }
@@ -313,14 +217,14 @@ ${goodData.name}
 }
 
 // 加入购物车
-async function addCart() {
+async function addCart(link) {
   try {
     log();
     log('开始加入购物车');
 
     const result = await request({
       method: 'get',
-      url: goodData.cartLink,
+      url: link,
       headers: Object.assign(defaultInfo.header, {
         cookie: defaultInfo.cookieData.join(''),
       }),
@@ -331,7 +235,7 @@ async function addCart() {
     const addCartResult = body('h3.ftx-02').text();
 
     if (addCartResult) {
-      console.log(`   ${addCartResult}`);
+      console.log(`${addCartResult}`);
       return true;
     } else {
       log.fail('添加购物车失败');
@@ -439,16 +343,11 @@ function formatDate(date, fmt) {
       } else if (k == 'S+') {
         var lens = RegExp.$1.length;
         lens = lens == 1 ? 3 : lens;
-        fmt = fmt.replace(
-          RegExp.$1,
-          ('00' + o[k]).substr(('' + o[k]).length - 1, lens)
-        );
+        fmt = fmt.replace(RegExp.$1, ('00' + o[k]).substr(('' + o[k]).length - 1, lens));
       } else {
         fmt = fmt.replace(
           RegExp.$1,
-          RegExp.$1.length == 1
-            ? o[k]
-            : ('00' + o[k]).substr(('' + o[k]).length)
+          RegExp.$1.length == 1 ? o[k] : ('00' + o[k]).substr(('' + o[k]).length)
         );
       }
     }
@@ -505,7 +404,7 @@ puppeteer
     log('查询中...\n');
     return runGoodSearch();
   })
-  .then(() => addCart())
+  .then((addCartLink) => addCart(addCartLink))
   .then((value) => {
     if (value) return isBuy ? buy() : '';
   })
