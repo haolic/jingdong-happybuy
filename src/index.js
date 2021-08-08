@@ -206,7 +206,7 @@ async function runGoodSearch() {
 ${infoStr}
 `;
       console.log(str);
-      const fileName = `records/${dayjs().format('YYYY-MM-DD HH')}.txt`;
+      const fileName = `records/${dayjs().format('YYYY-MM-DD-HH')}.txt`;
       fs.appendFile(fileName, str, (err) => {
         if (err) {
           console.log(err);
@@ -311,7 +311,7 @@ async function buy() {
       'submitOrderParam.jxj': '1',
     },
   });
-  const fileName = dayjs().format('YYYY-MM-DD HH:mm:ss') + '.txt';
+  const fileName = dayjs().format('YYYY-MM-DD_HH:mm:ss') + '.txt';
   if (result.data.success) {
     console.log(`下单成功,订单号${result.data.orderId}`);
     console.log('请前往京东商城及时付款，以免订单超时取消');
