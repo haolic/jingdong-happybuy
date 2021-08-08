@@ -16,7 +16,7 @@ module.exports = function args(params) {
     .option("t", {
       alias: "time",
       describe: "查询间隔ms",
-      default: 13000,
+      default: 15000,
       number: true
     })
     .option("b", {
