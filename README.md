@@ -73,9 +73,14 @@ $ yarn start -a 地区编号 -g 商品编号
 ```bash
 $ yarn start
 
+监控库存：
 Usage: node index.js -a 地区编号 -g 商品编号
 
 应用方式: yarn start -a 地区编号 -g 商品编号
+
+抢购：
+yarn start -a 地区编号 -g 商品编号 -f 抢购开始时间，格式YYYYMMDDHH:mm:ss
+抢购模式尽量在临近开抢20秒内再开始使用，防止高频率调用接口被关小黑屋
 
 选项：
   --version   显示版本号                                                  [布尔]
