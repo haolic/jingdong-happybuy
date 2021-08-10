@@ -18,7 +18,7 @@ const requestGoodStatus = async (goodId, areaId) => {
       'Content-type': 'application/json;charset=gbk', // 指定charset不生效, 中文还是乱码，问题不大，也可能是不对。
       'Upgrade-Insecure-Requests': 1,
       'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36',
     },
     params: {
       type: 'getstocks',
