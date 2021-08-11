@@ -254,10 +254,13 @@ async function addCart(link) {
       console.log(`${addCartResult}`);
       return true;
     } else {
-      log.fail('添加购物车失败');
+      console.log('添加购物车失败')
+      log('', true);
       return false;
     }
   } catch (error) {
+    console.log(error);
+    fs.appendFile('records/errorlog.txt', error);
     return Promise.reject();
   }
 }
